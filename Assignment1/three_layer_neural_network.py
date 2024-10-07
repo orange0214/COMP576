@@ -81,7 +81,7 @@ class NeuralNetwork(object):
         elif type == 'sigmoid':
             result = 1 / (1 + e**(-z))
         elif type == 'relu':
-            result = max(0, z)
+            result = np.maximum(0, z)
         else:
             raise ValueError('Invalid activation function type')
         return result
@@ -102,10 +102,7 @@ class NeuralNetwork(object):
             temp = self.actFun(z, 'sigmoid')
             result = temp * (1 - temp)
         elif type == 'relu':
-            if z > 0:
-                result = 1
-            else:
-                result = 0
+            result = np.where(z > 0, 1, 0)
         else:
             raise ValueError('Invalid activation function type')
         return result
@@ -218,7 +215,7 @@ def main():
     plt.scatter(X[:, 0], X[:, 1], s=40, c=y, cmap=plt.cm.Spectral)
     plt.show()
 
-    model = NeuralNetwork(nn_input_dim=2, nn_hidden_dim=3 , nn_output_dim=2, actFun_type='tanh')
+    model = NeuralNetwork(nn_input_dim=2, nn_hidden_dim=3 , nn_output_dim=2, actFun_type='relu')
     model.fit_model(X,y)
     model.visualize_decision_boundary(X,y)
 
