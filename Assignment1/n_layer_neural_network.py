@@ -24,17 +24,24 @@ class DeepNeuralNetwork(ThreeNN):
         return loss
 
     def fit_model(self, X, y, epsilon=0.01, num_passes=20000, print_loss=True):
+        input_X = X
         # Epoch
         for i in range(1):
             # Forward propagation in hidden layers
             for j in range(0, len(self.layers)-1):
-                X = self.layers[j].feedforward(X, lambda x: self.layers[j].actFun(x, type=self.actFun_type))
+                input_X = self.layers[j].feedforward(input_X)
             # Forward propagation in output layer
-            self.probs = np.exp(X) / np.sum(np.exp(X), axis=1, keepdims=True)
+            self.probs = np.exp(input_X) / np.sum(np.exp(input_X), axis=1, keepdims=True)
 
+            # calculate delta
+            delta = self.probs
+            delta[range(len(X)), y] -= 1
             # Backpropagation in each layer
-            for j in range(len(self.layers)-1, -1, -1):
-                self.layers[j].backprop(X, y, lambda x: self.layers[j].actFun_diff(x, type=self.actFun_type))
+            for j in range(len(self.layers)-2, -1, -1):
+                dW, db = self.layers[j].backprop(X, y, delta)
+                self.layers[j].W += -epsilon * dW
+                self.layers[j].b += -epsilon * db
+                delta = np.dot(delta, self.layers[j].W.T) * self.layers[j].actFun_diff(self.layers[j].z, self.actFun_type)
 
             # calculate loss
             if print_loss and i % 1000 == 0:
@@ -77,20 +84,20 @@ class Layer():
         else:
             raise ValueError('Invalid activation function type')
     
-    def feedforward(self, X, actFun):
+    def feedforward(self, X):
         self.z = np.dot(X, self.W) + self.b
         self.a = self.actFun(self.z, self.actFun_type)
         return self.a
     
     def backprop(self, X, y, delta):
-
         dW = np.dot(self.a.T, delta)
         db = np.sum(delta, axis=0, keepdims=True)
+        print(dW, db)
         return dW, db
 
 
 def main():
-    nn_dim_list = [2, 3, 3, 2]
+    nn_dim_list = [2, 3, 3, 3, 2]
     model = DeepNeuralNetwork(nn_dim_list, actFun_type='relu')
     X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
     y = np.array([[0], [1], [1], [0]])
